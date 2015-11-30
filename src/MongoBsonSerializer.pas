@@ -598,11 +598,30 @@ procedure TStringsBsonSerializer.Serialize(const AName: String; ASource:
 var
   i : integer;
   AList : TStrings;
+  SubSerializer : TBaseBsonSerializer;
+  SubObject : TObject;
 begin
   Target.startArray(AName);
   AList := ASource as TStrings;
   for i := 0 to AList.Count - 1 do
-    Target.appendStr('', AList[i]);
+  begin
+    if AList.Objects[i] <> nil then
+    begin
+      Target.startObject('');
+      Target.appendStr('Key', AList[i]);
+      SubObject := AList.Objects[i];
+      SubSerializer := CreateSerializer(SubObject.ClassType);
+      try
+        SubSerializer.Target := Target;
+        SubSerializer.Serialize('Object', SubObject);
+      finally
+       SubSerializer.Free;
+      end;
+      Target.finishObject;
+    end
+    else
+      Target.appendStr('', AList[i]);
+  end;
   Target.finishObject;
 end;
 
